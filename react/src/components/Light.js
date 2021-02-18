@@ -1,5 +1,8 @@
 import React, {useEffect, useState} from "react";
 
+//const BASEURL = "http://192.168.5.2:5000"
+const BASEURL = ""
+
 export const Light = props => {
     const [blue, setBlue] = useState(0)
     const [white, setWhite] = useState(0)
@@ -11,7 +14,7 @@ export const Light = props => {
 
     const update = async () =>
     {
-        const resp = await fetch(`http://192.168.5.2:5000/light?address=${props.address}`, {
+        const resp = await fetch(`${BASEURL}/light?address=${props.address}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

@@ -6,6 +6,7 @@
         <serverdata>
           <mappings>
             <mapping deploy="/home/pi/pywork/aquarium" local="$PROJECT_DIR$" />
+            <mapping deploy="/home/pi/pywork/aquarium/src/static" local="$PROJECT_DIR$/react/build/static" />
           </mappings>
         </serverdata>
       </paths>

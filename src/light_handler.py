@@ -3,6 +3,8 @@ from bluepy.btle import Scanner, DefaultDelegate, Peripheral
 SERVICE_HANDLE = 50
 
 
+# Turns a integer between 0 and 255into a 2-digit Hex representation.
+# e.g. 255 => FF, 0 => 00
 def paramToHexStr(p):
     if p >= 255:
         return "FF"
@@ -17,15 +19,29 @@ def paramToHexStr(p):
     return h
 
 
+## Returns a byte array that can be sent to the bulbs with the corresponding white and blue values between 0 and 255.
 def getBrightnessCommand(blue, white):
     blue = paramToHexStr(blue)
     white = paramToHexStr(white)
 
     return bytes.fromhex(f"2800 0000 {blue}{white} 000F 29")
 
+# scans the area for Relassy Lights (https://www.amazon.de/-/en/gp/product/B07KKBNNS1/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
+def scan():
+    scanner = Scanner().withDelegate(ScanDelegate())
+    devices = scanner.scan(6.0)
+    lights = []
+
+    for dev in devices:
+        name = dev.getValueText(9)
+        if name is not None and "Magic" in name:
+            lights.append(Light(name, dev.addr))
+
+    return lights
 
 class Light:
     def __init__(self, name, addr):
+        self.device = Peripheral(deviceAddr=addr)
         self.name = name
         self.address = addr
 
@@ -36,13 +52,17 @@ class Light:
         return {'name': self.name, 'address': self.address}
 
     def setLight(self, blue, white):
-        dev = Peripheral(deviceAddr=self.address)
-        dev.writeCharacteristic(SERVICE_HANDLE, getBrightnessCommand(blue, white))
+        self.device.writeCharacteristic(SERVICE_HANDLE, getBrightnessCommand(blue, white))
 
     def getLight(self):
-        dev = Peripheral(deviceAddr=self.address)
-        c = bytes.hex(dev.readCharacteristic(SERVICE_HANDLE))
+        c = bytes.hex(self.device.readCharacteristic(SERVICE_HANDLE))
         return {'blue': int(c[8:10], 16), 'white': int(c[10:12], 16)}
+
+    def turn_on(self):
+        self.device.writeCharacteristic(SERVICE_HANDLE, bytes.fromhex("FBF0 FA"))
+
+    def turn_off(self):
+        self.device.writeCharacteristic(SERVICE_HANDLE, bytes.fromhex("FB0F FA"))
 
 
 class ScanDelegate(DefaultDelegate):
@@ -55,22 +75,3 @@ class ScanDelegate(DefaultDelegate):
         elif isNewData:
             print ("Received new data from", dev.addr)
 
-
-def scan():
-    scanner = Scanner().withDelegate(ScanDelegate())
-    devices = scanner.scan(4.0)
-    lights = []
-
-    for dev in devices:
-        name = dev.getValueText(9)
-        if name is not None and "Magic" in name:
-            lights.append(Light(name, dev.addr))
-
-    return lights
-
-
-#dev = Peripheral(deviceAddr="4c:24:98:d2:19:98")
-#
-#s = dev.getServiceByUUID("FFC0")
-#for characteristic in s.getCharacteristics():
-#    print(characteristic.uuid, characteristic.getHandle())
