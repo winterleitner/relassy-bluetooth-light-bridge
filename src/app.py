@@ -1,36 +1,37 @@
-import bluetooth
+from flask import Flask, render_template, jsonify, Response, request
+#from flask_cors import CORS
+from light_handler import scan, Light
+app = Flask(__name__)
+#CORS(app)
+
+lights = []
+
+@app.route('/')
+def hello_world():
+    print(lights)
+    return render_template('index.html', lights=scan())
 
 
-#serverMAC = '4C:24:98:D2:19:98'
-#port = 3
-#s = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-#s.connect((serverMAC, port))
+@app.route("/scan")
+def scan_lights():
+    lights = scan()
+    objects = []
+    for l in lights:
+        objects.append(l.to_object())
+    return jsonify(objects)
 
-nearby_devices = bluetooth.discover_devices(duration=20, lookup_names=False,
-                                            flush_cache=True, lookup_class=False)
-print("Found {} devices.".format(len(nearby_devices)))
+@app.route("/light", methods = ['GET'])
+def get_light():
+    address = request.args.get("address")
+    light = Light("random", address)
+    status = light.getLight()
+    return jsonify(status)
 
-a = ''
-
-for addr in nearby_devices:
-    print(addr)
-    a = addr
-
-services = bluetooth.find_service(address=a)
-#services = bluetooth.find_service(address='0C:84:DC:D9:5C:EF')
-
-if len(services) > 0:
-    print("Found {} services on {}.".format(len(services), a))
-else:
-    print("No services found.")
-
-for svc in services:
-    print("\nService Name:", svc["name"])
-    print("    Host:       ", svc["host"])
-    print("    Description:", svc["description"])
-    print("    Provided By:", svc["provider"])
-    print("    Protocol:   ", svc["protocol"])
-    print("    channel/PSM:", svc["port"])
-    print("    svc classes:", svc["service-classes"])
-    print("    profiles:   ", svc["profiles"])
-    print("    service id: ", svc["service-id"])
+@app.route('/light', methods = ['POST'])
+def set_light():
+    address = request.args.get("address")
+    blue = request.json['blue']
+    white = request.json['white']
+    light = Light("random", address)
+    light.setLight(blue, white)
+    return jsonify({"status": "ok"})
