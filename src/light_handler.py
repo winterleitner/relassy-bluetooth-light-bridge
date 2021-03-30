@@ -3,9 +3,14 @@ from bluepy.btle import Scanner, DefaultDelegate, Peripheral
 SERVICE_HANDLE = 50
 
 
-# Turns a integer between 0 and 255into a 2-digit Hex representation.
-# e.g. 255 => FF, 0 => 00
 def paramToHexStr(p):
+    """
+    Turns a integer between 0 and 255into a 2-digit Hex representation.
+    e.g. 255 => FF, 0 => 00
+
+    :param p: The parameter to transform to a hex version. Min = 0, Max = 255
+    :return: A hex representation of the int parameter. 1-digit-hex-numbers are 0-padded.
+    """
     if p >= 255:
         return "FF"
     if p <= 0:
@@ -19,15 +24,26 @@ def paramToHexStr(p):
     return h
 
 
-## Returns a byte array that can be sent to the bulbs with the corresponding white and blue values between 0 and 255.
 def getBrightnessCommand(blue, white):
+    """
+    Returns a byte array that can be sent to the bulbs with the corresponding white and blue values between 0 and 255.
+
+    :param blue: The blue light brightness from 0 (off) to 255 (full brightness)
+    :param white: The white light  brightness from 0 (off) to 255 (full brightness)
+    :return: A byte sequence that can be sent to the bluetooth light.
+    """
     blue = paramToHexStr(blue)
     white = paramToHexStr(white)
 
     return bytes.fromhex(f"2800 0000 {blue}{white} 000F 29")
 
-# scans the area for Relassy Lights (https://www.amazon.de/-/en/gp/product/B07KKBNNS1/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
+
 def scan():
+    """
+    scans the area for Relassy Lights (https://www.amazon.de/-/en/gp/product/B07KKBNNS1/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
+
+    :return: A list of Light objects found
+    """
     scanner = Scanner().withDelegate(ScanDelegate())
     devices = scanner.scan(6.0)
     lights = []
@@ -38,6 +54,7 @@ def scan():
             lights.append(Light(name, dev.addr))
 
     return lights
+
 
 class Light:
     def __init__(self, name, addr):
